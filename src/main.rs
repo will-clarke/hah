@@ -37,6 +37,7 @@ struct MyGame {
     direction: Direction,
 }
 
+#[derive(Clone, Copy)]
 enum Direction {
     Up,
     Down,
@@ -55,6 +56,15 @@ impl Position {
         Position {
             x: (WINDOW_WIDTH / 2) as i16 / CELL_LENGTH,
             y: (WINDOW_HEIGHT / 2) as i16 / CELL_LENGTH,
+        }
+    }
+
+    pub fn shunt(&mut self, direction: Direction) {
+        match direction {
+            Direction::Up => self.y -= CELL_LENGTH,
+            Direction::Down => self.y += CELL_LENGTH,
+            Direction::Left => self.x -= CELL_LENGTH,
+            Direction::Right => self.x += CELL_LENGTH,
         }
     }
 
@@ -95,19 +105,19 @@ impl MyGame {
         match direction {
             Direction::Up => {
                 self.direction = Direction::Up;
-                self.square.y -= CELL_LENGTH;
+                self.square.shunt(Direction::Up);
             }
             Direction::Down => {
                 self.direction = Direction::Down;
-                self.square.y += CELL_LENGTH;
+                self.square.shunt(Direction::Down);
             }
             Direction::Left => {
                 self.direction = Direction::Left;
-                self.square.x -= CELL_LENGTH;
+                self.square.shunt(Direction::Left);
             }
             Direction::Right => {
                 self.direction = Direction::Right;
-                self.square.x += CELL_LENGTH;
+                self.square.shunt(Direction::Right);
             }
         }
     }
@@ -153,15 +163,16 @@ impl EventHandler for MyGame {
             KeyCode::Q => self.quit = true,
             KeyCode::W => self.handle_direction(Direction::Up),
             KeyCode::Up => self.handle_direction(Direction::Up),
-            KeyCode::S => self.square.y += CELL_LENGTH,
-            KeyCode::Down => self.square.y += CELL_LENGTH,
-            KeyCode::A => self.square.x -= CELL_LENGTH,
-            KeyCode::Left => self.square.x -= CELL_LENGTH,
-            KeyCode::D => self.square.x += CELL_LENGTH,
-            KeyCode::Right => self.square.x += CELL_LENGTH,
+            KeyCode::S => self.handle_direction(Direction::Down),
+            KeyCode::Down => self.handle_direction(Direction::Down),
+            KeyCode::A => self.handle_direction(Direction::Left),
+            KeyCode::Left => self.handle_direction(Direction::Left),
+            KeyCode::D => self.handle_direction(Direction::Right),
+            KeyCode::Right => self.handle_direction(Direction::Right),
             KeyCode::Space => {
                 // why not make a wall when we mash the spacebar?
                 self.walls.insert(self.square.clone());
+                self.square.shunt(self.direction);
                 () // is this legit? Seems a bit dubious to me...
             }
             _ => (),

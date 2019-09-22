@@ -7,6 +7,8 @@ use std::collections::HashSet;
 const CELL_LENGTH: i16 = 10;
 const WINDOW_HEIGHT: i32 = 600;
 const WINDOW_WIDTH: i32 = 800;
+const HEIGHT_CELLS: i16 = (WINDOW_HEIGHT / (CELL_LENGTH as i32)) as i16;
+const WIDTH_CELLS: i16 = (WINDOW_WIDTH / (CELL_LENGTH as i32)) as i16;
 
 fn main() {
     // Make a Context and an EventLoop.
@@ -61,10 +63,34 @@ impl Position {
 
     pub fn shunt(&mut self, direction: Direction) {
         match direction {
-            Direction::Up => self.y -= CELL_LENGTH,
-            Direction::Down => self.y += CELL_LENGTH,
-            Direction::Left => self.x -= CELL_LENGTH,
-            Direction::Right => self.x += CELL_LENGTH,
+            Direction::Up => {
+                if self.y > 0 {
+                    self.y -= CELL_LENGTH;
+                } else {
+                    self.y = HEIGHT_CELLS;
+                }
+            }
+            Direction::Down => {
+                if self.y < HEIGHT_CELLS {
+                    self.y += CELL_LENGTH;
+                } else {
+                    self.y = 0;
+                }
+            }
+            Direction::Left => {
+                if self.x > 0 {
+                    self.x -= CELL_LENGTH;
+                } else {
+                    self.x = WIDTH_CELLS;
+                }
+            }
+            Direction::Right => {
+                if self.x < WIDTH_CELLS {
+                    self.x += CELL_LENGTH;
+                } else {
+                    self.x = 0;
+                }
+            }
         }
     }
 
@@ -97,28 +123,7 @@ impl MyGame {
             quit: false,
             square: Position::new(),
             walls: HashSet::new(),
-            direction: Direction::Left,
-        }
-    }
-
-    pub fn handle_direction(&mut self, direction: Direction) {
-        match direction {
-            Direction::Up => {
-                self.direction = Direction::Up;
-                self.square.shunt(Direction::Up);
-            }
-            Direction::Down => {
-                self.direction = Direction::Down;
-                self.square.shunt(Direction::Down);
-            }
-            Direction::Left => {
-                self.direction = Direction::Left;
-                self.square.shunt(Direction::Left);
-            }
-            Direction::Right => {
-                self.direction = Direction::Right;
-                self.square.shunt(Direction::Right);
-            }
+            direction: Direction::Right,
         }
     }
 }
@@ -126,6 +131,10 @@ impl MyGame {
 impl EventHandler for MyGame {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.update_count += 1;
+
+        self.square.shunt(self.direction);
+        self.walls.insert(self.square.clone());
+
         if self.quit == true {
             event::quit(ctx);
         }
@@ -159,23 +168,24 @@ impl EventHandler for MyGame {
         _keymods: KeyMods,
         _repeat: bool,
     ) {
+        // self.direction = direction;
         match keycode {
             KeyCode::Q => self.quit = true,
-            KeyCode::W => self.handle_direction(Direction::Up),
-            KeyCode::Up => self.handle_direction(Direction::Up),
-            KeyCode::S => self.handle_direction(Direction::Down),
-            KeyCode::Down => self.handle_direction(Direction::Down),
-            KeyCode::A => self.handle_direction(Direction::Left),
-            KeyCode::Left => self.handle_direction(Direction::Left),
-            KeyCode::D => self.handle_direction(Direction::Right),
-            KeyCode::Right => self.handle_direction(Direction::Right),
-            KeyCode::Space => {
-                // why not make a wall when we mash the spacebar?
-                self.walls.insert(self.square.clone());
-                self.square.shunt(self.direction);
-                () // is this legit? Seems a bit dubious to me...
-            }
-            _ => (),
+            KeyCode::W => self.direction = Direction::Up,
+            KeyCode::Up => self.direction = Direction::Up,
+            KeyCode::S => self.direction = Direction::Down,
+            KeyCode::Down => self.direction = Direction::Down,
+            KeyCode::A => self.direction = Direction::Left,
+            KeyCode::Left => self.direction = Direction::Left,
+            KeyCode::D => self.direction = Direction::Right,
+            KeyCode::Right => self.direction = Direction::Right,
+            // KeyCode::Space => {
+            //     // why not make a wall when we mash the spacebar?
+            //     self.walls.insert(self.square.clone());
+            //     self.square.shunt(self.direction);
+            //     () // is this legit? Seems a bit dubious to me...
+            // }
+            _ => {}
         }
     }
 }

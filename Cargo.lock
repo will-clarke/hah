@@ -810,6 +810,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "hah"
+version = "0.0.1"
+dependencies = [
+ "ggez 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1715,13 +1722,6 @@ dependencies = [
 name = "sha1"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "shape"
-version = "0.1.0"
-dependencies = [
- "ggez 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "shared_library"

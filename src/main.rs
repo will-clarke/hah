@@ -190,7 +190,6 @@ impl EventHandler for MyGame {
             1500..=3000 => Speed::Fast,
             _ => Speed::MegaFast,
         };
-        println!("timer::ticks(ctx): {:?}", timer::ticks(ctx));
         if self.should_move(ctx, speed) {
             self.move_square(self.direction);
         }

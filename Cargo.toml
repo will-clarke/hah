@@ -1,6 +1,6 @@
 [package]
-name = "shape"
-version = "0.1.0"
+name = "hah"
+version = "0.0.1"
 authors = ["William Clarke <wmmclarke@gmail.com>"]
 edition = "2018"
 

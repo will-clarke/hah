@@ -1,14 +1,14 @@
-use ggez::event::{self, EventHandler, KeyMods};
-use ggez::graphics;
-use ggez::input::keyboard::KeyCode;
-use ggez::{Context, ContextBuilder, GameResult};
-use std::collections::HashSet;
+#![feature(clamp)]
 
-const CELL_LENGTH: i16 = 10;
-const WINDOW_HEIGHT: i32 = 600;
-const WINDOW_WIDTH: i32 = 800;
-const HEIGHT_CELLS: i16 = (WINDOW_HEIGHT / (CELL_LENGTH as i32)) as i16;
-const WIDTH_CELLS: i16 = (WINDOW_WIDTH / (CELL_LENGTH as i32)) as i16;
+use ggez::event::{self, EventHandler, KeyMods};
+use ggez::input::keyboard::KeyCode;
+use ggez::{graphics, timer};
+use ggez::{Context, ContextBuilder, GameResult};
+use std::collections::HashMap;
+
+const CELL_LENGTH: usize = 10;
+const WINDOW_HEIGHT: usize = 600;
+const WINDOW_WIDTH: usize = 800;
 
 fn main() {
     // Make a Context and an EventLoop.
@@ -31,11 +31,28 @@ fn main() {
     }
 }
 
+struct Wall {
+    colour: graphics::Color,
+}
+
+impl Wall {
+    pub fn new() -> Wall {
+        Wall {
+            colour: graphics::Color {
+                r: 0.0,
+                g: 1.0,
+                b: 1.0,
+                a: 0.1,
+            },
+        }
+    }
+}
+
 struct MyGame {
-    update_count: i32,
+    update_count: usize,
     quit: bool,
     square: Position,
-    walls: HashSet<Position>,
+    walls: HashMap<Position, Wall>,
     direction: Direction,
 }
 
@@ -47,17 +64,17 @@ enum Direction {
     Right,
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 struct Position {
-    x: i16,
-    y: i16,
+    x: usize,
+    y: usize,
 }
 
 impl Position {
     pub fn new() -> Position {
         Position {
-            x: (WINDOW_WIDTH / 2) as i16 / CELL_LENGTH,
-            y: (WINDOW_HEIGHT / 2) as i16 / CELL_LENGTH,
+            x: (WINDOW_WIDTH / 2) as usize / CELL_LENGTH,
+            y: (WINDOW_HEIGHT / 2) as usize / CELL_LENGTH,
         }
     }
 
@@ -67,11 +84,11 @@ impl Position {
                 if self.y > 0 {
                     self.y -= CELL_LENGTH;
                 } else {
-                    self.y = HEIGHT_CELLS;
+                    self.y = WINDOW_HEIGHT;
                 }
             }
             Direction::Down => {
-                if self.y < HEIGHT_CELLS {
+                if self.y < WINDOW_HEIGHT {
                     self.y += CELL_LENGTH;
                 } else {
                     self.y = 0;
@@ -81,11 +98,11 @@ impl Position {
                 if self.x > 0 {
                     self.x -= CELL_LENGTH;
                 } else {
-                    self.x = WIDTH_CELLS;
+                    self.x = WINDOW_WIDTH;
                 }
             }
             Direction::Right => {
-                if self.x < WIDTH_CELLS {
+                if self.x < WINDOW_WIDTH {
                     self.x += CELL_LENGTH;
                 } else {
                     self.x = 0;
@@ -115,6 +132,13 @@ impl Position {
 // screen size = 800 width x 600 height
 // maybe I could have a grid 80 width x 60 height?
 
+enum Speed {
+    MegaSlow,
+    Slow,
+    Fast,
+    MegaFast,
+}
+
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         // Load/create resources here: images, fonts, sounds, etc.
@@ -122,18 +146,54 @@ impl MyGame {
             update_count: 0,
             quit: false,
             square: Position::new(),
-            walls: HashSet::new(),
+            walls: HashMap::new(),
             direction: Direction::Right,
+        }
+    }
+
+    pub fn should_move(&self, ctx: &Context, speed: Speed) -> bool {
+        let speed_value = match speed {
+            Speed::MegaSlow => 8,
+            Speed::Slow => 4,
+            Speed::Fast => 2,
+            Speed::MegaFast => 1,
+        };
+        let ticks = timer::ticks(ctx);
+        ticks % speed_value == 0
+    }
+
+    pub fn move_square(&mut self, direction: Direction) {
+        self.square.shunt(direction);
+
+        // if self.walls.contains_key(&self.square) {
+        match self.walls.get_mut(&self.square) {
+            Some(wall) => {
+                wall.colour = graphics::Color {
+                    r: wall.colour.r,
+                    g: wall.colour.g,
+                    b: wall.colour.b,
+                    a: f32::clamp(wall.colour.a + 0.10, wall.colour.a, 1.0),
+                };
+            }
+            None => {
+                self.walls.insert(self.square, Wall::new());
+            }
         }
     }
 }
 
 impl EventHandler for MyGame {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.update_count += 1;
-
-        self.square.shunt(self.direction);
-        self.walls.insert(self.square.clone());
+        let speed = match timer::ticks(ctx) {
+            0..=500 => Speed::MegaSlow,
+            500..=1500 => Speed::Slow,
+            1500..=3000 => Speed::Fast,
+            _ => Speed::MegaFast,
+        };
+        println!("timer::ticks(ctx): {:?}", timer::ticks(ctx));
+        if self.should_move(ctx, speed) {
+            self.move_square(self.direction);
+        }
 
         if self.quit == true {
             event::quit(ctx);
@@ -147,15 +207,8 @@ impl EventHandler for MyGame {
 
         self.square.draw(ctx, graphics::BLACK);
 
-        let wall_colour = graphics::Color {
-            r: 0.0,
-            g: 1.0,
-            b: 1.0,
-            a: 1.0,
-        };
-
-        for wall in self.walls.iter() {
-            wall.draw(ctx, wall_colour);
+        for (position, wall) in self.walls.iter() {
+            position.draw(ctx, wall.colour);
         }
 
         graphics::present(ctx)
@@ -179,12 +232,6 @@ impl EventHandler for MyGame {
             KeyCode::Left => self.direction = Direction::Left,
             KeyCode::D => self.direction = Direction::Right,
             KeyCode::Right => self.direction = Direction::Right,
-            // KeyCode::Space => {
-            //     // why not make a wall when we mash the spacebar?
-            //     self.walls.insert(self.square.clone());
-            //     self.square.shunt(self.direction);
-            //     () // is this legit? Seems a bit dubious to me...
-            // }
             _ => {}
         }
     }

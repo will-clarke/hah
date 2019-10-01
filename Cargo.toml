@@ -3,6 +3,15 @@ name = "hah"
 version = "0.0.2"
 authors = ["William Clarke <wmmclarke@gmail.com>"]
 edition = "2018"
+description = """
+No idea what this really does. It's meant to be a game or something.
+Don't ask me
+"""
+documentation = "https://gitlab.com/will-clarke/hah"
+homepage = "https://gitlab.com/will-clarke/hah"
+repository = "https://gitlab.com/will-clarke/hah"
+readme = "README.md"
+license = "Unlicense OR MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

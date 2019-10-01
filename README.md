@@ -11,7 +11,7 @@ cargo install hah
 ¯\_(ツ)_/¯
 
 TODO: 
-[ ] Add some tests
-[ ] Maybe change the `trail` (background colour) to be a universal mapping of positions => colours.
-[ ] Allow baddies to have trails
-[ ] Improve baddie "AI"
+- [ ] Add some tests
+- [ ] Maybe change the `trail` (background colour) to be a universal mapping of positions => colours.
+- [ ] Allow baddies to have trails
+- [ ] Improve baddie "AI"

@@ -13,8 +13,8 @@ pub struct Position {
 impl Position {
     pub fn new() -> Position {
         Position {
-            x: (constants::WINDOW_WIDTH / 2) as isize / constants::CELL_LENGTH,
-            y: (constants::WINDOW_HEIGHT / 2) as isize / constants::CELL_LENGTH,
+            x: constants::HALF_WINDOW_WIDTH,
+            y: constants::HALF_WINDOW_HEIGHT,
         }
     }
 
@@ -90,5 +90,34 @@ impl Position {
         .unwrap();
 
         graphics::draw(ctx, &square, (ggez::mint::Point2 { x: 0.0, y: 0.0 },)).unwrap();
+    }
+
+    pub fn random_edge_position() -> Position {
+        let mut rng = rand::thread_rng();
+
+        let which_edge = Range::new(0, 4);
+        let height = Range::new(0, constants::WINDOW_HEIGHT);
+        let width = Range::new(0, constants::WINDOW_WIDTH);
+        let zero_to_three = which_edge.ind_sample(&mut rng);
+
+        match zero_to_three {
+            0 => Position {
+                x: 0,
+                y: height.ind_sample(&mut rng),
+            },
+            1 => Position {
+                x: width.ind_sample(&mut rng),
+                y: 0,
+            },
+            2 => Position {
+                x: constants::WINDOW_WIDTH - constants::CELL_LENGTH,
+                y: height.ind_sample(&mut rng),
+            },
+            3 => Position {
+                x: width.ind_sample(&mut rng),
+                y: constants::WINDOW_HEIGHT - constants::CELL_LENGTH,
+            },
+            _ => panic!("uh-oh"),
+        }
     }
 }

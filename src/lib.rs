@@ -1,5 +1,3 @@
-#![feature(clamp)]
-
 use ggez::event;
 use ggez::timer;
 use ggez::ContextBuilder;
@@ -9,7 +7,7 @@ mod direction;
 mod game;
 mod position;
 
-fn main() {
+pub fn run() {
     // Make a Context and an EventLoop.
     let (mut ctx, mut event_loop) = ContextBuilder::new("game_name", "author_name")
         .build()

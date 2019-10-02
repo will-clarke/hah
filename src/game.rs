@@ -2,47 +2,93 @@ use ggez::event::{self, EventHandler, KeyMods};
 use ggez::input::keyboard::KeyCode;
 use ggez::{graphics, timer};
 use ggez::{Context, GameResult};
-use rand::distributions::{IndependentSample, Range};
 use std::collections::hash_map::HashMap;
 
 use super::constants;
 use super::direction;
-use super::position;
+use super::position::Position;
 
-#[derive(Debug)]
-struct Trail {
+pub struct MyGame {
+    quit: bool,
+    direction: direction::Direction,
+    player: Player,
+    baddies: Vec<Baddie>,
+    background: Background,
+}
+
+#[cfg(test)]
+mod test {
+    use super::Background;
+    use super::Entity;
+    use super::Position;
+    use ggez::graphics;
+    use std::collections::HashMap;
+    #[test]
+    fn background_add() {
+        let e: Entity = Entity {
+            position: Position::new(),
+            colour: graphics::Color::new(0.0, 1.0, 1.0, 1.0),
+        };
+        let mut b = Background(HashMap::new());
+        b.add(e);
+        b.add(e);
+        assert_eq!(
+            b.0.get(&Position::new()).unwrap(),
+            &graphics::Color::new(0.0, 2.0, 2.0, 2.0)
+        )
+    }
+}
+struct Background(HashMap<Position, graphics::Color>);
+impl Background {
+    fn add(&mut self, e: Entity) {
+        let colour = self
+            .0
+            .entry(e.position)
+            .or_insert(graphics::Color::new(0.0, 0.0, 0.0, 0.0));
+        *colour = graphics::Color::new(
+            colour.r + e.colour.r,
+            colour.g + e.colour.g,
+            colour.b + e.colour.b,
+            colour.a + e.colour.a,
+        )
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Entity {
+    position: Position,
     colour: graphics::Color,
 }
 
-impl Trail {
-    pub fn new() -> Trail {
-        Trail {
+struct Player(Entity);
+struct Baddie(Entity);
+
+impl Player {
+    pub fn new() -> Player {
+        Player(Entity {
+            position: Position::new(),
             colour: graphics::Color {
                 r: 0.0,
                 g: 1.0,
                 b: 1.0,
                 a: 0.2,
             },
-        }
+        })
     }
 }
 
-pub struct MyGame {
-    quit: bool,
-    player: Player,
-    direction: direction::Direction,
-    baddies: Vec<Baddie>,
-}
-
-#[derive(Debug)]
-struct Player {
-    position: position::Position,
-    trail: HashMap<position::Position, Trail>,
-}
-
-struct Baddie {
-    colour: graphics::Color,
-    position: position::Position,
+impl Baddie {
+    pub fn new() -> Baddie {
+        Baddie(Entity {
+            position: Position::random_edge_position(),
+            colour: graphics::Color {
+                r: 0.2,
+                g: 0.0,
+                b: 0.0,
+                a: 0.2,
+            },
+        })
+    }
 }
 
 // screen size = 800 width x 600 height
@@ -57,61 +103,14 @@ enum Speed {
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
-        // Load/create resources here: images, fonts, sounds, etc.
         MyGame {
             quit: false,
-            player: Player {
-                position: position::Position::new(),
-                trail: HashMap::new(),
-            },
+            player: Player::new(),
             direction: direction::Direction::Right,
             baddies: Vec::new(),
+            background: Background(HashMap::new()),
         }
     }
-
-    fn random_edge_position(&self) -> position::Position {
-        let mut rng = rand::thread_rng();
-
-        let which_edge = Range::new(0, 4);
-        let height = Range::new(0, constants::WINDOW_HEIGHT);
-        let width = Range::new(0, constants::WINDOW_WIDTH);
-        let zero_to_three = which_edge.ind_sample(&mut rng);
-
-        match zero_to_three {
-            0 => position::Position {
-                x: 0,
-                y: height.ind_sample(&mut rng),
-            },
-            1 => position::Position {
-                x: width.ind_sample(&mut rng),
-                y: 0,
-            },
-            2 => position::Position {
-                x: constants::WINDOW_WIDTH - constants::CELL_LENGTH,
-                y: height.ind_sample(&mut rng),
-            },
-            3 => position::Position {
-                x: width.ind_sample(&mut rng),
-                y: constants::WINDOW_HEIGHT - constants::CELL_LENGTH,
-            },
-            _ => panic!("uh-oh"),
-        }
-    }
-
-    pub fn spawn_baddies(&mut self) {
-        let new_baddie = Baddie {
-            position: self.random_edge_position(),
-            colour: graphics::Color {
-                r: 1.,
-                g: 0.,
-                b: 0.,
-                a: 1.,
-            },
-        };
-        self.baddies.push(new_baddie);
-    }
-
-    pub fn spawn_goodies(&mut self) {}
 
     fn should_move(&self, ctx: &Context, speed: Speed) -> bool {
         let speed_value = match speed {
@@ -125,22 +124,22 @@ impl MyGame {
     }
 
     pub fn move_square(&mut self, direction: direction::Direction) {
-        self.player.position.shunt(direction);
+        self.player.0.position.shunt(direction);
 
         // if self.walls.contains_key(&self.player) {
-        match self.player.trail.get_mut(&self.player.position) {
-            Some(wall) => {
-                wall.colour = graphics::Color {
-                    r: wall.colour.r,
-                    g: wall.colour.g,
-                    b: wall.colour.b,
-                    a: f32::clamp(wall.colour.a + 0.20, wall.colour.a, 1.0),
-                };
-            }
-            None => {
-                self.player.trail.insert(self.player.position, Trail::new());
-            }
-        }
+        // match self.player.trail.get_mut(&self.player.position) {
+        //     Some(wall) => {
+        //         wall.0.colour = graphics::Color {
+        //             r: wall.0.colour.r,
+        //             g: wall.0.colour.g,
+        //             b: wall.0.colour.b,
+        //             a: f32::clamp(wall.0.colour.a + 0.20, wall.0.colour.a, 1.0),
+        //         };
+        //     }
+        //     None => {
+        //         self.player.trail.insert(self.player.position, Trail::new());
+        //     }
+        // }
     }
 }
 
@@ -149,11 +148,11 @@ impl EventHandler for MyGame {
         let ticks = timer::ticks(ctx);
 
         if ticks % 100 == 0 {
-            self.spawn_baddies();
+            self.baddies.push(Baddie::new());
         }
-        if ticks % 200 == 0 {
-            self.spawn_goodies();
-        }
+        // if ticks % 200 == 0 {
+        //     // self.spawn_goodies();
+        // }
 
         let speed = match ticks {
             0..=50 => Speed::MegaSlow,
@@ -166,11 +165,11 @@ impl EventHandler for MyGame {
         }
 
         for baddie in self.baddies.iter_mut() {
-            baddie.position.shunt_towards(&self.player.position);
-            if (self.player.position.x % constants::WINDOW_WIDTH
-                == baddie.position.x % constants::WINDOW_WIDTH)
-                && (self.player.position.y % constants::WINDOW_HEIGHT
-                    == baddie.position.y % constants::WINDOW_HEIGHT)
+            baddie.0.position.shunt_towards(&self.player.0.position);
+            if (self.player.0.position.x % constants::WINDOW_WIDTH
+                == baddie.0.position.x % constants::WINDOW_WIDTH)
+                && (self.player.0.position.y % constants::WINDOW_HEIGHT
+                    == baddie.0.position.y % constants::WINDOW_HEIGHT)
             {
                 event::quit(ctx);
             }
@@ -187,15 +186,15 @@ impl EventHandler for MyGame {
         let c = graphics::Color::new(1.0, 1.0, 1.0, 1.0);
         graphics::clear(ctx, c);
 
-        self.player.position.draw(ctx, graphics::BLACK);
+        self.player.0.position.draw(ctx, graphics::BLACK);
 
         for baddie in self.baddies.iter() {
-            baddie.position.draw(ctx, baddie.colour);
+            baddie.0.position.draw(ctx, baddie.0.colour);
         }
 
-        for (position, wall) in self.player.trail.iter() {
-            position.draw(ctx, wall.colour);
-        }
+        // for (0.position, wall) in self.player.trail.iter() {
+        //     0.position.draw(ctx, wall.0.colour);
+        // }
 
         graphics::present(ctx)
     }

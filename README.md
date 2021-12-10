@@ -1,14 +1,19 @@
 Hah
 ===
 
-Random "game"
+A superlative rust-based arcade game.
+
+Try to get over 20000 points! It's harder than it looks.
+
+Top-notch AI. Almost totally random!
+
+![Example gif: ./example.gif](./example.gif)
 
 To install, download [rust](https://www.rust-lang.org/tools/install) and then just
+
 ```bash
 cargo install hah
 ```
-
-¯\_(ツ)_/¯
 
 TODO: 
 - [ ] Add some tests
